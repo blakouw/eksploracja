@@ -1,8 +1,3 @@
-"""
-MODUŁ WIZUALIZACJI
-Centralne miejsce dla wszystkich wykresów i wizualizacji
-"""
-
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,18 +5,15 @@ import seaborn as sns
 from matplotlib.patches import Patch
 
 class Visualizations:
-    """Klasa do tworzenia wszystkich wizualizacji projektu"""
 
     def __init__(self, df_analysis):
         self.df = df_analysis
 
-        # Konfiguracja wykresów
         plt.style.use('default')
         sns.set_palette("husl")
         plt.rcParams['figure.figsize'] = (12, 8)
         plt.rcParams['font.size'] = 11
 
-        # Kolory dla różnych kategorii
         self.colors = {
             'gender': ['pink', 'lightblue'],
             'result': ['lightgreen', 'lightcoral'],
@@ -29,35 +21,27 @@ class Visualizations:
         }
 
     def create_all_plots(self):
-        """Tworzy wszystkie wizualizacje projektu"""
 
-        print("\n📊 GENEROWANIE WIZUALIZACJI...")
+        print("\nGENEROWANIE WIZUALIZACJI...")
 
-        # 1. Podstawowe rozkłady
         self.plot_basic_distributions()
 
-        # 2. Analiza związków między zmiennymi
         self.plot_variable_relationships()
 
-        # 3. Wizualizacje dla każdej hipotezy
         self.plot_hypothesis_specific_charts()
 
-        # 4. Wykresy zaawansowane
         self.plot_advanced_analysis()
 
-        print("✅ Wszystkie wizualizacje zostały wygenerowane")
+        print("Wszystkie wizualizacje zostały wygenerowane")
 
     def plot_basic_distributions(self):
-        """Podstawowe rozkłady zmiennych"""
 
-        print("📈 Tworzenie wykresów rozkładów podstawowych...")
+        print("Tworzenie wykresów rozkładów podstawowych...")
 
         fig = plt.figure(figsize=(20, 15))
 
-        # Grid layout
         gs = fig.add_gridspec(4, 4, hspace=0.3, wspace=0.3)
 
-        # 1. Rozkład wieku
         ax1 = fig.add_subplot(gs[0, 0])
         self.df['Age'].hist(bins=20, alpha=0.7, color='skyblue', edgecolor='black', ax=ax1)
         ax1.set_title('Rozkład wieku pacjentów')
@@ -65,7 +49,6 @@ class Visualizations:
         ax1.set_ylabel('Częstość')
         ax1.grid(True, alpha=0.3)
 
-        # 2. Rozkład płci
         ax2 = fig.add_subplot(gs[0, 1])
         gender_counts = self.df['Gender'].value_counts()
         ax2.pie([gender_counts[0], gender_counts[1]],
@@ -75,20 +58,26 @@ class Visualizations:
                 startangle=90)
         ax2.set_title('Rozkład płci')
 
-        # 3. Rozkład wyników
         ax3 = fig.add_subplot(gs[0, 2])
         result_counts = self.df['Result'].value_counts()
-        bars = ax3.bar(result_counts.index, result_counts.values,
-                       color=self.colors['result'])
-        ax3.set_title('Rozkład wyników (Zawał vs Brak)')
+
+        labels = []
+        values = []
+        colors_to_use = []
+
+        for i, (result, count) in enumerate(result_counts.items()):
+            labels.append(str(result).capitalize())
+            values.append(count)
+            colors_to_use.append(self.colors['result'][i % len(self.colors['result'])])
+
+        bars = ax3.bar(labels, values, color=colors_to_use)
+        ax3.set_title('Rozkład wyników')
         ax3.set_ylabel('Liczba przypadków')
 
-        # Dodaj wartości na słupkach
-        for bar, count in zip(bars, result_counts.values):
-            ax3.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 5,
+        for bar, count in zip(bars, values):
+            ax3.text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(values)*0.01,
                      str(count), ha='center', va='bottom')
 
-        # 4. Rozkład tętna
         ax4 = fig.add_subplot(gs[0, 3])
         self.df['Heart rate'].hist(bins=20, alpha=0.7, color='lightcoral',
                                    edgecolor='black', ax=ax4)
@@ -97,7 +86,6 @@ class Visualizations:
         ax4.set_ylabel('Częstość')
         ax4.grid(True, alpha=0.3)
 
-        # 5-8. Rozkłady biomarkerów i parametrów
         biomarkers = ['Troponin', 'CK-MB', 'Blood sugar', 'Systolic blood pressure']
         colors_bio = ['gold', 'purple', 'orange', 'lightgreen']
 
@@ -110,7 +98,6 @@ class Visualizations:
             ax.set_ylabel('Częstość')
             ax.grid(True, alpha=0.3)
 
-        # 9-12. Boxploty podstawowe
         basic_vars = ['Age', 'Heart rate', 'Troponin', 'CK-MB']
 
         for i, var in enumerate(basic_vars):
@@ -123,19 +110,20 @@ class Visualizations:
             ax.set_ylabel(var)
             ax.grid(True, alpha=0.3)
 
-        # 13-16. Porównania według płci
         comparison_vars = ['Age', 'Troponin', 'Heart rate', 'Blood sugar']
 
         for i, var in enumerate(comparison_vars):
             ax = fig.add_subplot(gs[3, i])
 
-            women_data = self.df[self.df['Gender'] == 0][var]
-            men_data = self.df[self.df['Gender'] == 1][var]
+            women_data = self.df[self.df['Gender'] == 0][var].dropna()
+            men_data = self.df[self.df['Gender'] == 1][var].dropna()
 
-            ax.hist(women_data, alpha=0.6, label='Kobiety', bins=15,
-                    density=True, color='pink')
-            ax.hist(men_data, alpha=0.6, label='Mężczyźni', bins=15,
-                    density=True, color='lightblue')
+            if len(women_data) > 5:
+                ax.hist(women_data, alpha=0.6, label='Kobiety', bins=15,
+                        density=True, color='pink')
+            if len(men_data) > 5:
+                ax.hist(men_data, alpha=0.6, label='Mężczyźni', bins=15,
+                        density=True, color='lightblue')
 
             ax.set_title(f'{var} według płci')
             ax.set_xlabel(var)
@@ -148,14 +136,12 @@ class Visualizations:
         plt.show()
 
     def plot_variable_relationships(self):
-        """Wykresy związków między zmiennymi"""
 
-        print("🔗 Tworzenie wykresów związków między zmiennymi...")
+        print("w wykresów związków między zmiennymi...")
 
         fig, axes = plt.subplots(2, 3, figsize=(18, 12))
         fig.suptitle('ANALIZA ZWIĄZKÓW MIĘDZY ZMIENNYMI', fontsize=16, fontweight='bold')
 
-        # 1. Macierz korelacji (mini wersja)
         numeric_vars = ['Age', 'Heart rate', 'Troponin', 'CK-MB', 'Result_Binary']
         corr_matrix = self.df[numeric_vars].corr()
 
@@ -163,10 +149,8 @@ class Visualizations:
                     square=True, fmt='.2f', ax=axes[0,0])
         axes[0,0].set_title('Macierz korelacji (kluczowe zmienne)')
 
-        # 2. Scatterplot - Age vs Troponin
         axes[0,1].scatter(self.df['Age'], self.df['Troponin'], alpha=0.6, color='steelblue')
 
-        # Linia trendu
         z = np.polyfit(self.df['Age'], self.df['Troponin'], 1)
         p = np.poly1d(z)
         axes[0,1].plot(self.df['Age'], p(self.df['Age']), "r--", alpha=0.8)
@@ -177,27 +161,45 @@ class Visualizations:
         axes[0,1].set_ylabel('Troponina')
         axes[0,1].grid(True, alpha=0.3)
 
-        # 3. Boxplot - Troponina według wyniku
         sns.boxplot(data=self.df, x='Result', y='Troponin', ax=axes[0,2])
         axes[0,2].set_title('Troponina według wyniku zawału')
         axes[0,2].grid(True, alpha=0.3)
 
-        # 4. Średnie w grupach - biomarkery według wyniku
-        biomarker_means = self.df.groupby('Result')[['Troponin', 'CK-MB']].mean()
-        biomarker_means.plot(kind='bar', ax=axes[1,0], color=['gold', 'purple'])
+
+        unique_results = self.df['Result'].unique()
+        result_means = self.df.groupby('Result')[['Troponin', 'CK-MB']].mean()
+
+        colors_for_results = []
+        labels_for_results = []
+        for result in result_means.index:
+            if str(result).lower() == 'negative':
+                colors_for_results.append('lightgreen')
+                labels_for_results.append('Negative')
+            elif str(result).lower() == 'positive':
+                colors_for_results.append('lightcoral')
+                labels_for_results.append('Positive')
+            else:
+                colors_for_results.append('gray')
+                labels_for_results.append(str(result))
+
+        result_means.plot(kind='bar', ax=axes[1,0], color=['gold', 'purple'])
         axes[1,0].set_title('Średnie biomarkerów według wyniku')
         axes[1,0].set_xlabel('Wynik')
         axes[1,0].set_ylabel('Średnia wartość')
         axes[1,0].legend(['Troponina', 'CK-MB'])
-        axes[1,0].tick_params(axis='x', rotation=0)
+        axes[1,0].tick_params(axis='x', rotation=45)
         axes[1,0].grid(True, alpha=0.3)
 
-        # 5. Scatterplot - CK-MB vs Troponina (kolorowany według wyniku)
-        for result, color, label in [('Negative', 'lightgreen', 'Negative'),
-                                     ('Positive', 'lightcoral', 'Positive')]:
+        unique_results = self.df['Result'].unique()
+        color_map = {'negative': 'lightgreen', 'positive': 'lightcoral'}
+
+        for result in unique_results:
             subset = self.df[self.df['Result'] == result]
-            axes[1,1].scatter(subset['CK-MB'], subset['Troponin'],
-                              alpha=0.6, color=color, label=label, s=50)
+            if len(subset) > 0:
+                result_key = str(result).lower()
+                color = color_map.get(result_key, 'gray')
+                axes[1,1].scatter(subset['CK-MB'], subset['Troponin'],
+                                  alpha=0.6, color=color, label=str(result).capitalize(), s=50)
 
         axes[1,1].set_xlabel('CK-MB')
         axes[1,1].set_ylabel('Troponina')
@@ -205,7 +207,6 @@ class Visualizations:
         axes[1,1].legend()
         axes[1,1].grid(True, alpha=0.3)
 
-        # 6. Violin plot - Ciśnienie według płci
         sns.violinplot(data=self.df, x='Gender', y='Systolic blood pressure', ax=axes[1,2])
         axes[1,2].set_title('Rozkład ciśnienia skurczowego według płci')
         axes[1,2].set_xticklabels(['Kobiety', 'Mężczyźni'])
@@ -215,9 +216,8 @@ class Visualizations:
         plt.show()
 
     def plot_hypothesis_specific_charts(self):
-        """Wykresy specyficzne dla każdej hipotezy"""
 
-        print("🎯 Tworzenie wykresów dla konkretnych hipotez...")
+        print("Tworzenie wykresów dla konkretnych hipotez...")
 
         # HIPOTEZA 1: Age → Troponin
         self._plot_hypothesis_1()
@@ -229,16 +229,13 @@ class Visualizations:
         self._plot_hypothesis_3()
 
     def _plot_hypothesis_1(self):
-        """Wykresy dla Hipotezy 1: Age → Troponin"""
 
         fig, axes = plt.subplots(2, 2, figsize=(15, 12))
         fig.suptitle('HIPOTEZA 1: Wiek jako predyktor poziomu troponiny',
                      fontsize=16, fontweight='bold')
 
-        # 1. Scatterplot główny
         axes[0,0].scatter(self.df['Age'], self.df['Troponin'], alpha=0.6, color='steelblue')
 
-        # Linia regresji
         z = np.polyfit(self.df['Age'], self.df['Troponin'], 1)
         p = np.poly1d(z)
         axes[0,0].plot(self.df['Age'], p(self.df['Age']), "r--", alpha=0.8, linewidth=2)
@@ -249,7 +246,6 @@ class Visualizations:
         axes[0,0].set_ylabel('Troponina (ng/mL)')
         axes[0,0].grid(True, alpha=0.3)
 
-        # 2. Troponina według grup wiekowych
         age_groups = pd.cut(self.df['Age'], bins=[0, 40, 60, 80, 100],
                             labels=['<40', '40-60', '60-80', '80+'])
         troponin_by_age = self.df.groupby(age_groups)['Troponin'].mean()
@@ -263,12 +259,10 @@ class Visualizations:
         axes[0,1].set_xticklabels(troponin_by_age.index)
         axes[0,1].grid(True, alpha=0.3)
 
-        # Dodaj wartości na słupkach
         for bar, value in zip(bars, troponin_by_age.values):
             axes[0,1].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.1,
                            f'{value:.2f}', ha='center', va='bottom')
 
-        # 3. Korelacje z wszystkimi predyktorami H1
         h1_vars = ['Age', 'Gender', 'Heart rate']
         h1_corrs = [self.df[var].corr(self.df['Troponin']) for var in h1_vars]
 
@@ -279,13 +273,11 @@ class Visualizations:
         axes[1,0].axhline(y=0, color='black', linestyle='-', alpha=0.3)
         axes[1,0].grid(True, alpha=0.3)
 
-        # Dodaj wartości
         for bar, corr in zip(bars, h1_corrs):
             axes[1,0].text(bar.get_x() + bar.get_width()/2,
                            corr + (0.02 if corr > 0 else -0.05),
                            f'{corr:.3f}', ha='center', va='bottom' if corr > 0 else 'top')
 
-        # 4. Residual plot (symulowany dla wizualizacji)
         from sklearn.linear_model import LinearRegression
         X = self.df[h1_vars].values
         y = self.df['Troponin'].values
@@ -305,25 +297,21 @@ class Visualizations:
         plt.show()
 
     def _plot_hypothesis_2(self):
-        """Wykresy dla Hipotezy 2: Gender → Systolic BP"""
 
         fig, axes = plt.subplots(2, 2, figsize=(15, 12))
         fig.suptitle('HIPOTEZA 2: Płeć jako determinanta ciśnienia skurczowego',
                      fontsize=16, fontweight='bold')
 
-        # 1. Boxplot główny
         sns.boxplot(data=self.df, x='Gender', y='Systolic blood pressure', ax=axes[0,0])
         axes[0,0].set_title('Ciśnienie skurczowe według płci')
         axes[0,0].set_xticklabels(['Kobiety', 'Mężczyźni'])
         axes[0,0].grid(True, alpha=0.3)
 
-        # Dodaj średnie
         means = self.df.groupby('Gender')['Systolic blood pressure'].mean()
         for i, (gender, mean) in enumerate(means.items()):
             axes[0,0].text(i, mean + 2, f'μ={mean:.1f}', ha='center',
                            bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
 
-        # 2. Histogram porównawczy
         women_bp = self.df[self.df['Gender'] == 0]['Systolic blood pressure']
         men_bp = self.df[self.df['Gender'] == 1]['Systolic blood pressure']
 
@@ -337,7 +325,6 @@ class Visualizations:
         axes[0,1].legend()
         axes[0,1].grid(True, alpha=0.3)
 
-        # 3. Korelacje dla H2
         h2_vars = ['Gender', 'Age', 'Blood sugar']
         h2_corrs = [self.df[var].corr(self.df['Systolic blood pressure']) for var in h2_vars]
 
@@ -353,7 +340,6 @@ class Visualizations:
                            corr + (0.01 if corr > 0 else -0.02),
                            f'{corr:.3f}', ha='center', va='bottom' if corr > 0 else 'top')
 
-        # 4. Średnie ciśnienie według płci i grup wiekowych
         age_groups = pd.cut(self.df['Age'], bins=[0, 50, 70, 100], labels=['<50', '50-70', '70+'])
         bp_by_gender_age = self.df.groupby(['Gender', age_groups])['Systolic blood pressure'].mean().unstack()
 
@@ -369,21 +355,19 @@ class Visualizations:
         plt.show()
 
     def _plot_hypothesis_3(self):
-        """Wykresy dla Hipotezy 3: Biomarkers → Result"""
 
         fig, axes = plt.subplots(2, 2, figsize=(15, 12))
         fig.suptitle('HIPOTEZA 3: Biomarkery jako predyktory zawału serca',
                      fontsize=16, fontweight='bold')
 
-        # 1. Porównanie biomarkerów według wyniku
         biomarkers = ['Troponin', 'CK-MB']
 
         x = np.arange(len(biomarkers))
         width = 0.35
 
-        negative_means = [self.df[self.df['Result'] == 'Negative'][marker].mean()
+        negative_means = [self.df[self.df['Result'].astype(str).str.lower() == 'negative'][marker].mean()
                           for marker in biomarkers]
-        positive_means = [self.df[self.df['Result'] == 'Positive'][marker].mean()
+        positive_means = [self.df[self.df['Result'].astype(str).str.lower() == 'positive'][marker].mean()
                           for marker in biomarkers]
 
         bars1 = axes[0,0].bar(x - width/2, negative_means, width,
@@ -398,16 +382,17 @@ class Visualizations:
         axes[0,0].legend()
         axes[0,0].grid(True, alpha=0.3)
 
-        # Dodaj wartości na słupkach
         for bars, means in [(bars1, negative_means), (bars2, positive_means)]:
             for bar, mean in zip(bars, means):
                 axes[0,0].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.5,
                                f'{mean:.2f}', ha='center', va='bottom', fontsize=9)
 
-        # 2. Scatterplot biomarkerów z kolorowaniem według wyniku
         for result, color, label in [('Negative', 'lightgreen', 'Negative'),
                                      ('Positive', 'lightcoral', 'Positive')]:
-            subset = self.df[self.df['Result'] == result]
+            subset = self.df[(self.df['Result'].astype(str).str.lower() == result.lower()) &
+                             (self.df['Troponin'].notna()) &
+                             (self.df['CK-MB'].notna())]
+
             axes[0,1].scatter(subset['Troponin'], subset['CK-MB'],
                               alpha=0.6, color=color, label=label, s=50)
 
@@ -417,7 +402,6 @@ class Visualizations:
         axes[0,1].legend()
         axes[0,1].grid(True, alpha=0.3)
 
-        # 3. Korelacje dla H3
         h3_vars = ['Troponin', 'CK-MB', 'Heart rate']
         h3_corrs = [self.df[var].corr(self.df['Result_Binary']) for var in h3_vars]
 
@@ -433,19 +417,21 @@ class Visualizations:
                            corr + (0.02 if corr > 0 else -0.05),
                            f'{corr:.3f}', ha='center', va='bottom' if corr > 0 else 'top')
 
-        # 4. Boxploty wszystkich predyktorów H3
         h3_data = []
         h3_labels = []
 
         for var in h3_vars:
             for result in ['Negative', 'Positive']:
-                data = self.df[self.df['Result'] == result][var]
+                data = self.df[(self.df['Result'].astype(str).str.lower() == result.lower()) &
+                               (self.df[var].notna())][var]
+                if data.empty:
+                    continue
+
                 h3_data.append(data)
                 h3_labels.append(f'{var}\n{result}')
 
         bp = axes[1,1].boxplot(h3_data, labels=h3_labels, patch_artist=True)
 
-        # Kolorowanie boxplotów
         colors_cycle = ['lightgreen', 'lightcoral'] * 3
         for patch, color in zip(bp['boxes'], colors_cycle):
             patch.set_facecolor(color)
@@ -460,14 +446,12 @@ class Visualizations:
         plt.show()
 
     def plot_advanced_analysis(self):
-        """Wykresy zaawansowanej analizy"""
 
-        print("🔬 Tworzenie wykresów zaawansowanej analizy...")
+        print(" Tworzenie wykresów zaawansowanej analizy...")
 
         fig, axes = plt.subplots(2, 3, figsize=(18, 12))
         fig.suptitle('ZAAWANSOWANA ANALIZA - PODSUMOWANIE', fontsize=16, fontweight='bold')
 
-        # 1. Ranking ważności zmiennych (symulowany)
         from sklearn.ensemble import RandomForestClassifier
 
         features = ['Age', 'Gender', 'Heart rate', 'Systolic blood pressure',
@@ -489,7 +473,6 @@ class Visualizations:
         axes[0,0].set_xlabel('Ważność')
         axes[0,0].grid(True, alpha=0.3)
 
-        # 2. Macierz korelacji - wszystkie zmienne
         all_vars = ['Age', 'Gender', 'Heart rate', 'Systolic blood pressure',
                     'Blood sugar', 'CK-MB', 'Troponin', 'Result_Binary']
         corr_matrix = self.df[all_vars].corr()
@@ -499,7 +482,6 @@ class Visualizations:
                     center=0, square=True, fmt='.2f', ax=axes[0,1])
         axes[0,1].set_title('Pełna macierz korelacji')
 
-        # 3. Rozkład wyników według kombinacji płci i grup wiekowych
         age_groups = pd.cut(self.df['Age'], bins=[0, 50, 70, 100], labels=['<50', '50-70', '70+'])
         result_by_demo = pd.crosstab([self.df['Gender'], age_groups],
                                      self.df['Result'], normalize='index') * 100
@@ -512,7 +494,6 @@ class Visualizations:
         axes[0,2].legend(['Negative', 'Positive'])
         axes[0,2].tick_params(axis='x', rotation=45)
 
-        # 4. Porównanie modeli (symulowane wyniki)
         models = ['Tylko wiek', 'Tylko płeć', 'Tylko biomarkery', 'Wszystkie zmienne']
         accuracies = [0.65, 0.58, 0.82, 0.87]  # Przykładowe wyniki
 
@@ -526,7 +507,6 @@ class Visualizations:
             axes[1,0].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.01,
                            f'{acc:.2f}', ha='center', va='bottom')
 
-        # 5. Wykres normalności (Q-Q plot dla troponiny)
         from scipy import stats
 
         troponin_data = self.df['Troponin'].dropna()
@@ -534,7 +514,6 @@ class Visualizations:
         axes[1,1].set_title('Q-Q Plot: Troponina vs Rozkład normalny')
         axes[1,1].grid(True, alpha=0.3)
 
-        # 6. Podsumowanie hipotez
         hypothesis_results = ['POTWIERDZONA\nCZĘŚCIOWO', 'POTWIERDZONA', 'POTWIERDZONA']
         hypothesis_names = ['H1:\nWiek→Troponina', 'H2:\nPłeć→Ciśnienie', 'H3:\nBiomarkery→Zawał']
         colors_hyp = ['yellow', 'lightgreen', 'lightgreen']
@@ -553,24 +532,19 @@ class Visualizations:
         plt.show()
 
     def create_summary_dashboard(self):
-        """Tworzy dashboard podsumowujący wszystkie wyniki"""
 
-        print("📊 Tworzenie dashboardu podsumowującego...")
+        print("Tworzenie dashboardu podsumowującego...")
 
         fig = plt.figure(figsize=(20, 12))
 
-        # Layout z GridSpec
         gs = fig.add_gridspec(3, 4, height_ratios=[1, 1, 1], width_ratios=[1, 1, 1, 1])
 
-        # Tytuł główny
         fig.suptitle('DASHBOARD PODSUMOWUJĄCY - ANALIZA CZYNNIKÓW DIAGNOSTYCZNYCH ZAWAŁU SERCA',
                      fontsize=18, fontweight='bold', y=0.95)
-
-        # Panel 1: Podstawowe statystyki
         ax1 = fig.add_subplot(gs[0, 0])
         stats_data = {
             'Pacjenci': len(self.df),
-            'Zawały': len(self.df[self.df['Result'] == 'Positive']),
+            'Zawały': len(self.df[self.df['Result'].astype(str).str.lower() == 'positive']),
             'Średni wiek': f"{self.df['Age'].mean():.1f}",
             'Kobiety': f"{(self.df['Gender'] == 0).sum()}",
             'Mężczyźni': f"{(self.df['Gender'] == 1).sum()}"
@@ -586,8 +560,7 @@ class Visualizations:
         ax1.set_ylim(0, 1)
         ax1.axis('off')
 
-        # Panel 2-4: Status hipotez (już zaimplementowane)
-        # Panel 5: Najważniejsze wnioski
+
         ax5 = fig.add_subplot(gs[2, :])
 
         conclusions = [
@@ -608,7 +581,6 @@ class Visualizations:
         ax5.set_ylim(0, 1)
         ax5.axis('off')
 
-        # Dodaj ramki
         for ax in [ax1, ax5]:
             rect = plt.Rectangle((0.01, 0.01), 0.98, 0.98, linewidth=2,
                                  edgecolor='black', facecolor='lightgray', alpha=0.1)
@@ -617,19 +589,17 @@ class Visualizations:
         plt.tight_layout()
         plt.show()
 
-        print("✅ Dashboard podsumowujący został wygenerowany")
+        print(" Dashboard podsumowujący został wygenerowany")
 
     def save_all_plots(self, output_dir='plots'):
-        """Zapisuje wszystkie wykresy do plików"""
 
         import os
 
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
-        print(f"💾 Zapisywanie wykresów do katalogu: {output_dir}")
+        print(f" Zapisywanie wykresów do katalogu: {output_dir}")
 
-        # Lista wszystkich wykresów do zapisania
         plots_to_save = [
             ('basic_distributions', self.plot_basic_distributions),
             ('variable_relationships', self.plot_variable_relationships),
@@ -640,14 +610,14 @@ class Visualizations:
             ('summary_dashboard', self.create_summary_dashboard)
         ]
 
+
         for plot_name, plot_function in plots_to_save:
             try:
-                plt.figure()
                 plot_function()
                 plt.savefig(f'{output_dir}/{plot_name}.png', dpi=300, bbox_inches='tight')
-                plt.close()
-                print(f"  ✅ Zapisano: {plot_name}.png")
+                plt.close('all')
+                print(f"   Zapisano: {plot_name}.png")
             except Exception as e:
-                print(f"  ❌ Błąd przy zapisywaniu {plot_name}: {e}")
+                print(f"  Błąd przy zapisywaniu {plot_name}: {e}")
 
-        print(f"💾 Zapisywanie wykresów zakończone")
+        print(f"Zapisywanie wykresów zakończone")

@@ -1,8 +1,3 @@
-"""
-MODUŁ TESTOWANIA HIPOTEZ
-Testowanie trzech hipotez badawczych z różnymi zmiennymi zależnymi
-"""
-
 import pandas as pd
 import numpy as np
 from scipy import stats
@@ -14,12 +9,10 @@ from sklearn.metrics import r2_score, accuracy_score, roc_auc_score, classificat
 from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
 
 class HypothesisTesting:
-    """Klasa do testowania trzech hipotez badawczych"""
 
     def __init__(self, df_analysis):
         self.df = df_analysis
 
-        # Definicje hipotez
         self.hypotheses = {
             'h1': {
                 'title': 'Wiek pacjenta jest głównym predyktorem poziomu troponiny',
@@ -47,23 +40,21 @@ class HypothesisTesting:
         self.results = {}
 
     def test_all_hypotheses(self):
-        """Testuje wszystkie trzy hipotezy"""
 
         print("\n" + "=" * 80)
         print("TESTOWANIE HIPOTEZ BADAWCZYCH")
         print("=" * 80)
 
-        # Testuj każdą hipotezę
         for hyp_id in ['h1', 'h2', 'h3']:
             print(f"\n{'='*60}")
             print(f"HIPOTEZA {hyp_id.upper()}")
             print(f"{'='*60}")
 
             hyp = self.hypotheses[hyp_id]
-            print(f"📌 {hyp['title']}")
-            print(f"📊 {hyp['description']}")
-            print(f"🎯 Zmienna zależna: {hyp['dependent']}")
-            print(f"📈 Zmienne niezależne: {', '.join(hyp['independent'])}")
+            print(f' {hyp['title']}')
+            print(f" {hyp['description']}")
+            print(f" Zmienna zależna: {hyp['dependent']}")
+            print(f" Zmienne niezależne: {', '.join(hyp['independent'])}")
 
             if hyp['type'] == 'regression':
                 result = self._test_regression_hypothesis(hyp_id, hyp)
@@ -72,32 +63,26 @@ class HypothesisTesting:
 
             self.results[hyp_id] = result
 
-            # Wyświetl wyniki
             self._display_hypothesis_results(hyp_id, result)
 
-        # Podsumowanie wszystkich hipotez
         self._create_final_summary()
 
         return self.results
 
     def _test_regression_hypothesis(self, hyp_id, hyp):
-        """Testuje hipotezę regresyjną"""
 
-        print(f"\n🔬 ANALIZA REGRESYJNA - {hyp_id.upper()}")
+        print(f"\n ANALIZA REGRESYJNA - {hyp_id.upper()}")
         print("-" * 40)
 
-        # Przygotowanie danych
         X = self.df[hyp['independent']]
         y = self.df[hyp['dependent']]
 
-        # Podstawowe statystyki
-        print(f"📊 Statystyki zmiennej zależnej ({hyp['dependent']}):")
+        print(f" Statystyki zmiennej zależnej ({hyp['dependent']}):")
         print(f"   Średnia: {y.mean():.3f}")
         print(f"   Odchylenie std: {y.std():.3f}")
         print(f"   Zakres: [{y.min():.3f}, {y.max():.3f}]")
 
-        # Korelacje
-        print(f"\n🔗 Korelacje z zmienną zależną:")
+        print(f"\n Korelacje z zmienną zależną:")
         correlations = {}
         for var in hyp['independent']:
             corr, p_val = pearsonr(self.df[var], y)
@@ -105,21 +90,16 @@ class HypothesisTesting:
             significance = '***' if p_val < 0.001 else '**' if p_val < 0.01 else '*' if p_val < 0.05 else 'ns'
             print(f"   {var}: r = {corr:.3f} (p = {p_val:.4f}) {significance}")
 
-        # Model regresji liniowej
-        print(f"\n📈 MODEL REGRESJI LINIOWEJ:")
+        print(f"\n MODEL REGRESJI LINIOWEJ:")
 
-        # Podział danych
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-        # Model
         reg_model = LinearRegression()
         reg_model.fit(X_train, y_train)
 
-        # Predykcje
         y_pred_train = reg_model.predict(X_train)
         y_pred_test = reg_model.predict(X_test)
 
-        # Metryki
         r2_train = r2_score(y_train, y_pred_train)
         r2_test = r2_score(y_test, y_pred_test)
         mse_test = np.mean((y_test - y_pred_test) ** 2)
@@ -129,27 +109,24 @@ class HypothesisTesting:
         print(f"   R² (testowy): {r2_test:.3f}")
         print(f"   RMSE (testowy): {rmse_test:.3f}")
 
-        # Współczynniki
-        print(f"\n📊 Współczynniki regresji:")
+        print(f"\n Współczynniki regresji:")
         print(f"   Wyraz wolny: {reg_model.intercept_:.3f}")
         for i, var in enumerate(hyp['independent']):
             coef = reg_model.coef_[i]
             print(f"   {var}: {coef:.3f}")
 
-        # Test istotności modelu (F-test)
         n = len(y_train)
         k = len(hyp['independent'])
 
-        if r2_train < 1.0:  # Unikamy dzielenia przez zero
+        if r2_train < 1.0:
             f_statistic = (r2_train / k) / ((1 - r2_train) / (n - k - 1))
             f_p_value = 1 - stats.f.cdf(f_statistic, k, n - k - 1)
 
-            print(f"\n🔬 Test istotności modelu (F-test):")
+            print(f"\n Test istotności modelu (F-test):")
             print(f"   F-statystyka: {f_statistic:.3f}")
             print(f"   p-value: {f_p_value:.6f}")
             print(f"   Model {'ISTOTNY' if f_p_value < 0.05 else 'NIEISTOTNY'} statystycznie (α=0.05)")
 
-        # Interpretacja wyników
         interpretation = self._interpret_regression_results(r2_test, correlations, hyp['dependent'])
 
         return {
@@ -167,23 +144,19 @@ class HypothesisTesting:
         }
 
     def _test_classification_hypothesis(self, hyp_id, hyp):
-        """Testuje hipotezę klasyfikacyjną"""
 
-        print(f"\n🔬 ANALIZA KLASYFIKACYJNA - {hyp_id.upper()}")
+        print(f"\n ANALIZA KLASYFIKACYJNA - {hyp_id.upper()}")
         print("-" * 40)
 
-        # Przygotowanie danych
         X = self.df[hyp['independent']]
         y = self.df[hyp['dependent']]
 
-        # Podstawowe statystyki
         class_counts = y.value_counts()
         print(f"📊 Rozkład klasy docelowej:")
         print(f"   Klasa 0 (Negative): {class_counts[0]} ({class_counts[0]/len(y)*100:.1f}%)")
         print(f"   Klasa 1 (Positive): {class_counts[1]} ({class_counts[1]/len(y)*100:.1f}%)")
 
-        # Korelacje z klasą docelową
-        print(f"\n🔗 Korelacje z klasą docelową:")
+        print(f"\n Korelacje z klasą docelową:")
         correlations = {}
         for var in hyp['independent']:
             corr, p_val = pearsonr(self.df[var], y)
@@ -191,45 +164,37 @@ class HypothesisTesting:
             significance = '***' if p_val < 0.001 else '**' if p_val < 0.01 else '*' if p_val < 0.05 else 'ns'
             print(f"   {var}: r = {corr:.3f} (p = {p_val:.4f}) {significance}")
 
-        # Podział danych
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
                                                             random_state=42, stratify=y)
 
-        # Standaryzacja
         scaler = StandardScaler()
         X_train_scaled = scaler.fit_transform(X_train)
         X_test_scaled = scaler.transform(X_test)
 
-        # Model regresji logistycznej
-        print(f"\n📈 MODEL REGRESJI LOGISTYCZNEJ:")
+        print(f"\n MODEL REGRESJI LOGISTYCZNEJ:")
 
         log_model = LogisticRegression(random_state=42)
         log_model.fit(X_train_scaled, y_train)
 
-        # Predykcje
         y_pred = log_model.predict(X_test_scaled)
         y_proba = log_model.predict_proba(X_test_scaled)[:, 1]
 
-        # Metryki
         accuracy = accuracy_score(y_test, y_pred)
         auc = roc_auc_score(y_test, y_proba)
 
         print(f"   Dokładność: {accuracy:.3f}")
         print(f"   AUC: {auc:.3f}")
 
-        # Współczynniki
-        print(f"\n📊 Współczynniki regresji logistycznej:")
+        print(f"\n Współczynniki regresji logistycznej:")
         print(f"   Wyraz wolny: {log_model.intercept_[0]:.3f}")
         for i, var in enumerate(hyp['independent']):
             coef = log_model.coef_[0][i]
             odds_ratio = np.exp(coef)
             print(f"   {var}: {coef:.3f} (OR = {odds_ratio:.3f})")
 
-        # Raport klasyfikacji
-        print(f"\n📋 RAPORT KLASYFIKACJI:")
+        print(f"\n RAPORT KLASYFIKACJI:")
         print(classification_report(y_test, y_pred, target_names=['Negative', 'Positive']))
 
-        # Interpretacja wyników
         interpretation = self._interpret_classification_results(accuracy, auc, correlations)
 
         return {
@@ -306,19 +271,17 @@ class HypothesisTesting:
         }
 
     def _display_hypothesis_results(self, hyp_id, result):
-        """Wyświetla wyniki testowania hipotezy"""
 
-        print(f"\n💡 INTERPRETACJA WYNIKÓW - {hyp_id.upper()}:")
+        print(f"\n INTERPRETACJA WYNIKÓW - {hyp_id.upper()}:")
         print("-" * 50)
 
         interp = result['interpretation']
-        print(f"📊 {interp['conclusion']}")
+        print(f" {interp['conclusion']}")
 
         if result['type'] == 'regression':
-            print(f"📈 {interp['r2_interpretation']}")
-            print(f"🎯 Model ma {interp['model_strength']} wpływ predykcyjny")
+            print(f" {interp['r2_interpretation']}")
+            print(f" Model ma {interp['model_strength']} wpływ predykcyjny")
 
-            # Wnioski o hipotezie
             r2 = result['r2_test']
             if r2 > 0.1 and any(abs(corr['correlation']) > 0.3 for corr in result['correlations'].values()):
                 conclusion = "HIPOTEZA POTWIERDZONA CZĘŚCIOWO"
@@ -330,11 +293,10 @@ class HypothesisTesting:
                 conclusion = "HIPOTEZA ODRZUCONA"
                 explanation = "Brak znaczącego związku predykcyjnego"
 
-        else:  # classification
-            print(f"🎯 {interp['auc_interpretation']}")
-            print(f"✅ {interp['accuracy_interpretation']}")
+        else:
+            print(f" {interp['auc_interpretation']}")
+            print(f" {interp['accuracy_interpretation']}")
 
-            # Wnioski o hipotezie
             auc = result['auc']
             accuracy = result['accuracy']
             if auc > 0.7 and accuracy > 0.7:
@@ -347,38 +309,35 @@ class HypothesisTesting:
                 conclusion = "HIPOTEZA ODRZUCONA"
                 explanation = "Brak wystarczającej zdolności predykcyjnej"
 
-        print(f"\n🏆 WNIOSEK: {conclusion}")
-        print(f"📝 UZASADNIENIE: {explanation}")
+        print(f"\n WNIOSEK: {conclusion}")
+        print(f" UZASADNIENIE: {explanation}")
 
-        # Dodaj do wyników
         result['hypothesis_conclusion'] = conclusion
         result['hypothesis_explanation'] = explanation
 
     def _create_final_summary(self):
-        """Tworzy podsumowanie wszystkich hipotez"""
 
         print(f"\n\n" + "="*80)
         print("PODSUMOWANIE TESTOWANIA HIPOTEZ")
         print("="*80)
 
-        print(f"\n📋 STATUS HIPOTEZ:")
+        print(f"\n STATUS HIPOTEZ:")
         for hyp_id in ['h1', 'h2', 'h3']:
             hyp = self.hypotheses[hyp_id]
             result = self.results[hyp_id]
 
-            status_icon = "✅" if "POTWIERDZONA" in result['hypothesis_conclusion'] else "❌"
+            status_icon = "" if "POTWIERDZONA" in result['hypothesis_conclusion'] else "❌"
             print(f"{status_icon} {hyp_id.upper()}: {result['hypothesis_conclusion']}")
-            print(f"   📌 {hyp['title']}")
-            print(f"   📊 {result['hypothesis_explanation']}")
+            print(f"    {hyp['title']}")
+            print(f"   {result['hypothesis_explanation']}")
 
             if result['type'] == 'regression':
-                print(f"   📈 R² = {result['r2_test']:.3f}")
+                print(f"    R² = {result['r2_test']:.3f}")
             else:
-                print(f"   📈 AUC = {result['auc']:.3f}, Accuracy = {result['accuracy']:.3f}")
+                print(f"    AUC = {result['auc']:.3f}, Accuracy = {result['accuracy']:.3f}")
             print()
 
-        # Ranking predyktorów
-        print(f"🏆 RANKING NAJSILNIEJSZYCH PREDYKTORÓW:")
+        print(f" RANKING NAJSILNIEJSZYCH PREDYKTORÓW:")
         all_predictors = []
 
         for hyp_id, result in self.results.items():
@@ -392,11 +351,10 @@ class HypothesisTesting:
         for i, (predictor, strength, hyp_id) in enumerate(all_predictors, 1):
             print(f"   {i}. {predictor}: |r| = {strength:.3f} (z hipotezy {hyp_id.upper()})")
 
-        # Ogólne wnioski
         confirmed_hypotheses = sum(1 for result in self.results.values()
                                    if "POTWIERDZONA" in result['hypothesis_conclusion'])
 
-        print(f"\n📊 STATYSTYKI OGÓLNE:")
+        print(f"\n STATYSTYKI OGÓLNE:")
         print(f"   Potwierdzone hipotezy: {confirmed_hypotheses}/3")
         print(f"   Procent sukcesu: {confirmed_hypotheses/3*100:.1f}%")
 
@@ -407,11 +365,10 @@ class HypothesisTesting:
         else:
             overall_conclusion = "Badanie nie wykazało znaczących związków - konieczna reanaliza"
 
-        print(f"\n🎯 WNIOSEK OGÓLNY:")
+        print(f"\n WNIOSEK OGÓLNY:")
         print(f"   {overall_conclusion}")
 
     def get_detailed_results(self):
-        """Zwraca szczegółowe wyniki wszystkich testów"""
         return {
             'hypotheses_definitions': self.hypotheses,
             'test_results': self.results,

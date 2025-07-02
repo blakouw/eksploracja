@@ -1,7 +1,3 @@
-"""
-MODUŁ STATYSTYK OPISOWYCH
-Punkty 1-6 z wymagań: statystyki opisowe, tabele liczności, korelacje
-"""
 
 import pandas as pd
 import numpy as np
@@ -10,7 +6,6 @@ import seaborn as sns
 from scipy.stats import chi2_contingency
 
 class DescriptiveStats:
-    """Klasa do przeprowadzania analiz statystyk opisowych"""
 
     def __init__(self, df_analysis):
         self.df = df_analysis
@@ -20,7 +15,6 @@ class DescriptiveStats:
         self.all_numeric = self.quantitative_vars + ['Gender', 'Result_Binary']
 
     def run_all_analyses(self):
-        """Uruchamia wszystkie analizy statystyk opisowych (punkty 1-6)"""
 
         print("\n" + "=" * 70)
         print("CZĘŚĆ II: CZYSZCZENIE I ANALIZA DANYCH - STATYSTYKI OPISOWE")
@@ -45,7 +39,6 @@ class DescriptiveStats:
         self.calculate_correlation_matrix()
 
     def calculate_quantitative_statistics(self):
-        """Punkt 1: Statystyki opisowe dla zmiennych ilościowych"""
 
         print("\n1. STATYSTYKI OPISOWE DLA ZMIENNYCH ILOŚCIOWYCH")
         print("-" * 60)
@@ -53,10 +46,9 @@ class DescriptiveStats:
         self.quant_stats = {}
 
         for var in self.quantitative_vars:
-            print(f"\n📊 {var.upper()}:")
+            print(f"\n{var.upper()}:")
             data = self.df[var]
 
-            # Obliczanie wszystkich wymaganych statystyk
             stats_dict = {
                 'Liczba przypadków': len(data),
                 'Średnia': data.mean(),
@@ -68,23 +60,19 @@ class DescriptiveStats:
                 'Wariancja': data.var()
             }
 
-            # Zapisz do słownika dla dalszego użycia
             self.quant_stats[var] = stats_dict
 
-            # Wyświetl statystyki
             for key, value in stats_dict.items():
                 if isinstance(value, (int, float)) and key != 'Liczba przypadków':
                     print(f"   {key}: {value:.3f}")
                 else:
                     print(f"   {key}: {value}")
 
-        # Stwórz tabelę podsumowującą
         self._create_summary_table()
 
     def _create_summary_table(self):
-        """Tworzy tabelę podsumowującą wszystkie statystyki"""
 
-        print(f"\n📋 TABELA PODSUMOWUJĄCA STATYSTYKI:")
+        print(f"\nTABELA PODSUMOWUJĄCA STATYSTYKI:")
 
         summary_df = pd.DataFrame()
         for var, stats in self.quant_stats.items():
@@ -102,7 +90,6 @@ class DescriptiveStats:
         print(summary_df.to_string())
 
     def calculate_qualitative_frequencies(self):
-        """Punkt 2: Tabele liczności dla zmiennych jakościowych"""
 
         print("\n\n2. TABELE LICZNOŚCI DLA ZMIENNYCH JAKOŚCIOWYCH")
         print("-" * 60)
@@ -110,31 +97,26 @@ class DescriptiveStats:
         self.qual_stats = {}
 
         for var in self.qualitative_vars:
-            print(f"\n📊 {var.upper()}:")
+            print(f"\n {var.upper()}:")
 
-            # Oblicz liczności i procenty
             counts = self.df[var].value_counts()
             percentages = self.df[var].value_counts(normalize=True) * 100
 
-            # Zapisz do słownika
             self.qual_stats[var] = {
                 'counts': counts,
                 'percentages': percentages
             }
 
-            # Wyświetl wyniki
             for category in counts.index:
                 print(f"   {category}: {counts[category]} ({percentages[category]:.1f}%)")
 
             print(f"   Łącznie: {counts.sum()} przypadków")
 
     def create_contingency_table(self):
-        """Punkt 3: Tabela wielodzielcza"""
 
         print("\n\n3. TABELA WIELODZIELCZA")
         print("-" * 40)
 
-        # Główna tabela kontyngencji
         self.contingency_table = pd.crosstab(
             self.df['Gender'],
             self.df['Result'],
@@ -144,74 +126,106 @@ class DescriptiveStats:
         print("📊 GENDER vs RESULT (liczności):")
         print(self.contingency_table)
 
-        # Tabela procentowa (względem płci)
         self.contingency_pct = pd.crosstab(
             self.df['Gender'],
             self.df['Result'],
             normalize='index'
         ) * 100
 
-        print("\n📊 GENDER vs RESULT (procenty względem płci):")
+        print("\nGENDER vs RESULT (procenty względem płci):")
         print(self.contingency_pct.round(1))
 
-        # Tabela procentowa (względem wyniku)
         contingency_pct_result = pd.crosstab(
             self.df['Gender'],
             self.df['Result'],
             normalize='columns'
         ) * 100
 
-        print("\n📊 GENDER vs RESULT (procenty względem wyniku):")
+        print("\nGENDER vs RESULT (procenty względem wyniku):")
         print(contingency_pct_result.round(1))
 
-        # Test chi-kwadrat
         chi2_stat, p_val, dof, expected = chi2_contingency(
             self.contingency_table.iloc[:-1, :-1]
         )
 
-        print(f"\n🔬 TEST CHI-KWADRAT:")
+        print(f"\nTEST CHI-KWADRAT:")
         print(f"   Chi² = {chi2_stat:.3f}")
         print(f"   p-value = {p_val:.6f}")
         print(f"   Stopnie swobody = {dof}")
         print(f"   Wynik: {'Istotna zależność' if p_val < 0.05 else 'Brak istotnej zależności'} (α=0.05)")
 
     def create_categorized_histograms(self):
-        """Punkt 4: Histogramy skategoryzowane"""
 
         print("\n\n4. HISTOGRAMY SKATEGORYZOWANE")
         print("-" * 45)
 
+        print(f"\nDEBUG - Analiza zmiennej Result:")
+        print(f"  Unikalne wartości: {self.df['Result'].unique()}")
+        print(f"  Rozkład: {self.df['Result'].value_counts()}")
+
         fig, axes = plt.subplots(2, 3, figsize=(18, 12))
         fig.suptitle('Histogramy skategoryzowane według płci i wyniku', fontsize=16, fontweight='bold')
 
-        # Histogramy względem płci (górny rząd)
         vars_for_gender = ['Troponin', 'Systolic blood pressure', 'Age']
 
         for i, var in enumerate(vars_for_gender):
             # Dane dla każdej płci
-            women_data = self.df[self.df['Gender'] == 0][var]
-            men_data = self.df[self.df['Gender'] == 1][var]
+            women_data = self.df[self.df['Gender'] == 0][var].dropna()
+            men_data = self.df[self.df['Gender'] == 1][var].dropna()
 
-            # Histogram
-            axes[0, i].hist(women_data, alpha=0.6, label='Kobiety', bins=20, density=True, color='pink')
-            axes[0, i].hist(men_data, alpha=0.6, label='Mężczyźni', bins=20, density=True, color='lightblue')
+            # Sprawdź czy mamy wystarczająco danych
+            if len(women_data) > 5:
+                axes[0, i].hist(women_data, alpha=0.6, label=f'Kobiety (n={len(women_data)})',
+                                bins=20, density=True, color='pink')
+
+            if len(men_data) > 5:
+                axes[0, i].hist(men_data, alpha=0.6, label=f'Mężczyźni (n={len(men_data)})',
+                                bins=20, density=True, color='lightblue')
+
             axes[0, i].set_title(f'{var} według płci')
             axes[0, i].set_xlabel(var)
             axes[0, i].set_ylabel('Gęstość')
             axes[0, i].legend()
             axes[0, i].grid(True, alpha=0.3)
 
-        # Histogramy względem wyniku (dolny rząd)
         vars_for_result = ['Troponin', 'CK-MB', 'Heart rate']
 
-        for i, var in enumerate(vars_for_result):
-            # Dane dla każdego wyniku
-            negative_data = self.df[self.df['Result'] == 'Negative'][var]
-            positive_data = self.df[self.df['Result'] == 'Positive'][var]
+        unique_results = self.df['Result'].unique()
+        print(f"\nDEBUG - Rysowanie histogramów dla wyników: {unique_results}")
 
-            # Histogram
-            axes[1, i].hist(negative_data, alpha=0.6, label='Negative', bins=20, density=True, color='lightgreen')
-            axes[1, i].hist(positive_data, alpha=0.6, label='Positive', bins=20, density=True, color='lightcoral')
+        for i, var in enumerate(vars_for_result):
+            any_plotted = False
+
+            for j, result_value in enumerate(unique_results):
+                data = self.df[self.df['Result'] == result_value][var].dropna()
+
+                if len(data) > 5:
+                    if 'neg' in str(result_value).lower():
+                        color = 'lightgreen'
+                        label = 'Negative'
+                    elif 'pos' in str(result_value).lower():
+                        color = 'lightcoral'
+                        label = 'Positive'
+                    else:
+                        color = f'C{j}'
+                        label = str(result_value)
+
+                    label_with_count = f'{label} (n={len(data)})'
+
+                    axes[1, i].hist(data, alpha=0.6, label=label_with_count,
+                                    bins='auto', color=color, edgecolor='black')
+                    axes[1, i].set_yscale('log')
+                    any_plotted = True
+
+                    print(f"  DEBUG - {var} dla {result_value}: {len(data)} obserwacji")
+                else:
+                    print(f"  DEBUG - {var} dla {result_value}: tylko {len(data)} obserwacji (za mało)")
+
+            if not any_plotted:
+                axes[1, i].text(0.5, 0.5, 'Brak wystarczających danych\ndla tej zmiennej',
+                                ha='center', va='center', transform=axes[1, i].transAxes,
+                                fontsize=12, color='red')
+
             axes[1, i].set_title(f'{var} według wyniku')
             axes[1, i].set_xlabel(var)
             axes[1, i].set_ylabel('Gęstość')
@@ -224,7 +238,6 @@ class DescriptiveStats:
         print("✅ Histogramy skategoryzowane zostały wygenerowane")
 
     def create_group_means_plots(self):
-        """Punkt 5: Wykresy średnich w grupach"""
 
         print("\n5. WYKRES ŚREDNICH W GRUPACH")
         print("-" * 40)
@@ -232,7 +245,6 @@ class DescriptiveStats:
         fig, axes = plt.subplots(2, 2, figsize=(15, 12))
         fig.suptitle('Wykresy średnich w grupach i interakcji', fontsize=16, fontweight='bold')
 
-        # 5a. Średnie względem płci
         gender_means = self.df.groupby('Gender')[['Troponin', 'Systolic blood pressure', 'Age']].mean()
         gender_means.T.plot(kind='bar', ax=axes[0,0], color=['pink', 'lightblue'])
         axes[0,0].set_title('Średnie zmiennych według płci')
@@ -242,41 +254,44 @@ class DescriptiveStats:
         axes[0,0].tick_params(axis='x', rotation=45)
         axes[0,0].grid(True, alpha=0.3)
 
-        print("📊 Średnie według płci:")
+        print("Średnie według płci:")
         print(gender_means.round(2))
 
-        # 5b. Średnie względem wyniku
         result_means = self.df.groupby('Result')[['Troponin', 'CK-MB', 'Heart rate']].mean()
-        result_means.T.plot(kind='bar', ax=axes[0,1], color=['lightgreen', 'lightcoral'])
+        result_means.T.plot(kind='bar', ax=axes[0,1])
         axes[0,1].set_title('Średnie zmiennych według wyniku')
         axes[0,1].set_xlabel('Zmienne')
         axes[0,1].set_ylabel('Średnia wartość')
-        axes[0,1].legend(['Negative', 'Positive'])
+
+        legend_labels = [str(val).capitalize() for val in result_means.index]
+        axes[0,1].legend(legend_labels)
         axes[0,1].tick_params(axis='x', rotation=45)
         axes[0,1].grid(True, alpha=0.3)
 
-        print("\n📊 Średnie według wyniku:")
+        print("\nŚrednie według wyniku:")
         print(result_means.round(2))
 
-        # 5c. Wykres interakcji - Płeć x Wynik → Troponina
         interaction_data = []
         for gender in [0, 1]:
-            for result in ['Negative', 'Positive']:
+            for result in self.df['Result'].unique():
                 subset = self.df[(self.df['Gender'] == gender) & (self.df['Result'] == result)]
                 if len(subset) > 0:
                     mean_troponin = subset['Troponin'].mean()
                     interaction_data.append({
                         'Gender': 'Kobiety' if gender == 0 else 'Mężczyźni',
-                        'Result': result,
+                        'Result': str(result).capitalize(),
                         'Mean_Troponin': mean_troponin
                     })
 
-        # Plot interakcji
-        for gender in ['Kobiety', 'Mężczyźni']:
+        gender_groups = ['Kobiety', 'Mężczyźni']
+        result_values = [str(r).capitalize() for r in self.df['Result'].unique()]
+
+        for gender in gender_groups:
             gender_data = [d for d in interaction_data if d['Gender'] == gender]
-            results = [d['Result'] for d in gender_data]
-            means = [d['Mean_Troponin'] for d in gender_data]
-            axes[1,0].plot(results, means, marker='o', linewidth=2, label=gender)
+            if gender_data:
+                results = [d['Result'] for d in gender_data]
+                means = [d['Mean_Troponin'] for d in gender_data]
+                axes[1,0].plot(results, means, marker='o', linewidth=2, label=gender)
 
         axes[1,0].set_title('Interakcja: Płeć × Wynik → Troponina')
         axes[1,0].set_xlabel('Wynik')
@@ -286,11 +301,13 @@ class DescriptiveStats:
 
         # 5d. Boxplot porównawczy
         box_data = [
-            self.df[self.df['Gender'] == 0]['Systolic blood pressure'],
-            self.df[self.df['Gender'] == 1]['Systolic blood pressure']
+            self.df[self.df['Gender'] == 0]['Systolic blood pressure'].dropna(),
+            self.df[self.df['Gender'] == 1]['Systolic blood pressure'].dropna()
         ]
 
-        axes[1,1].boxplot(box_data, labels=['Kobiety', 'Mężczyźni'])
+        bp = axes[1,1].boxplot(box_data, labels=['Kobiety', 'Mężczyźni'], patch_artist=True)
+        bp['boxes'][0].set_facecolor('pink')
+        bp['boxes'][1].set_facecolor('lightblue')
         axes[1,1].set_title('Rozkład ciśnienia skurczowego według płci')
         axes[1,1].set_ylabel('Ciśnienie skurczowe (mmHg)')
         axes[1,1].grid(True, alpha=0.3)
@@ -298,7 +315,7 @@ class DescriptiveStats:
         plt.tight_layout()
         plt.show()
 
-        print("✅ Wykresy średnich w grupach zostały wygenerowane")
+        print("Wykresy średnich w grupach zostały wygenerowane")
 
     def calculate_correlation_matrix(self):
         """Punkt 6: Macierz korelacji"""
@@ -309,35 +326,35 @@ class DescriptiveStats:
         # Oblicz macierz korelacji dla wszystkich zmiennych numerycznych
         self.correlation_matrix = self.df[self.all_numeric].corr()
 
-        print("📊 MACIERZ KORELACJI (wszystkie zmienne numeryczne):")
+        print("mACIERZ KORELCJI (wszystkie zmienne numeryczne):")
         print(self.correlation_matrix.round(3))
 
-        # Znajdź najsilniejsze korelacje
         self._find_strongest_correlations()
 
-        # Wizualizacja macierzy korelacji
         self._plot_correlation_matrix()
 
-        print("✅ Analiza korelacji została zakończona")
+        print("Analiza korcji została zakończona")
 
     def _find_strongest_correlations(self):
-        """Znajduje i wyświetla najsilniejsze korelacje"""
 
-        print(f"\n🔍 NAJSILNIEJSZE KORELACJE:")
+        print(f"\nl NAJSILNIEJSZE KORELACJE:")
 
-        # Stwórz listę par korelacji (wykluczając diagonalę)
         correlations = []
         for i in range(len(self.correlation_matrix.columns)):
             for j in range(i+1, len(self.correlation_matrix.columns)):
                 var1 = self.correlation_matrix.columns[i]
                 var2 = self.correlation_matrix.columns[j]
                 corr_value = self.correlation_matrix.iloc[i, j]
-                correlations.append((var1, var2, corr_value, abs(corr_value)))
 
-        # Sortuj według siły korelacji
+                if not pd.isna(corr_value):
+                    correlations.append((var1, var2, corr_value, abs(corr_value)))
+
+        if not correlations:
+            print("Brk prawidłowych korelacji do wyświetlenia")
+            return
+
         correlations.sort(key=lambda x: x[3], reverse=True)
 
-        # Wyświetl top 5 korelacji
         print("Top 5 najsilniejszych korelacji:")
         for i, (var1, var2, corr, abs_corr) in enumerate(correlations[:5], 1):
             strength = self._interpret_correlation_strength(abs_corr)
@@ -345,7 +362,6 @@ class DescriptiveStats:
             print(f"   {i}. {var1} ↔ {var2}: r = {corr:.3f} ({direction}, {strength})")
 
     def _interpret_correlation_strength(self, abs_corr):
-        """Interpretuje siłę korelacji"""
         if abs_corr < 0.1:
             return "bardzo słaba"
         elif abs_corr < 0.3:
@@ -358,14 +374,11 @@ class DescriptiveStats:
             return "bardzo silna"
 
     def _plot_correlation_matrix(self):
-        """Tworzy wykres macierzy korelacji"""
 
         plt.figure(figsize=(12, 10))
 
-        # Maska dla górnego trójkąta
         mask = np.triu(np.ones_like(self.correlation_matrix, dtype=bool))
 
-        # Heatmapa
         sns.heatmap(
             self.correlation_matrix,
             mask=mask,
@@ -383,7 +396,6 @@ class DescriptiveStats:
         plt.show()
 
     def get_statistics_summary(self):
-        """Zwraca podsumowanie wszystkich statystyk w formacie słownika"""
 
         return {
             'quantitative_stats': self.quant_stats,

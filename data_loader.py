@@ -1,43 +1,24 @@
-"""
-MODUŁ WCZYTYWANIA I PRZYGOTOWANIA DANYCH
-Klasa odpowiedzialna za wczytanie datasetu i jego wstępne przygotowanie
-"""
-
 import pandas as pd
 import numpy as np
 
 class DataLoader:
-    """Klasa do wczytywania i przygotowywania danych medycznych"""
 
     def __init__(self):
         self.df = None
         self.df_analysis = None
 
     def load_and_prepare_data(self, filepath):
-        """
-        Wczytuje i przygotowuje dane do analizy
 
-        Args:
-            filepath (str): Ścieżka do pliku CSV
-
-        Returns:
-            tuple: (df_original, df_analysis)
-        """
-
-        print(f"📂 Wczytywanie danych z pliku: {filepath}")
+        print(f"Wczytywanie danych z pliku: {filepath}")
 
         try:
-            # Wczytanie danych
             self.df = pd.read_csv(filepath)
             print(f"✅ Pomyślnie wczytano {self.df.shape[0]} wierszy i {self.df.shape[1]} kolumn")
 
-            # Przygotowanie danych do analizy
             self.df_analysis = self._prepare_analysis_data()
 
-            # Podstawowe informacje
             self._display_basic_info()
 
-            # Wyświetlenie hipotez
             self._display_hypotheses()
 
             return self.df, self.df_analysis
@@ -50,23 +31,70 @@ class DataLoader:
             raise
 
     def _prepare_analysis_data(self):
-        """Przygotowuje dane do analizy (kodowanie zmiennych itp.)"""
 
         df_analysis = self.df.copy()
 
-        # Kodowanie zmiennej Result na binarną
-        df_analysis['Result_Binary'] = df_analysis['Result'].map({
-            'Negative': 0,
-            'Positive': 1
+        print("🔧 Przygotowanie danych do analizy...")
+        print(f"   Początkowa liczba wierszy: {len(df_analysis)}")
+
+        initial_rows = len(df_analysis)
+        df_analysis = df_analysis.dropna(subset=['Result'])
+        after_result_clean = len(df_analysis)
+
+        if initial_rows > after_result_clean:
+            print(f"🧹 Usunięto {initial_rows - after_result_clean} wierszy z brakującymi Result")
+
+        print(f"   Unikalne wartości w Result przed kodowaniem: {df_analysis['Result'].unique()}")
+
+        df_analysis['Result_Binary'] = df_analysis['Result'].str.lower().map({
+            'negative': 0,
+            'positive': 1
         })
+
+        null_binary = df_analysis['Result_Binary'].isnull().sum()
+        if null_binary > 0:
+            print(f"PROBLEM: {null_binary} wartości Result nie zostało zakodowanych!")
+            print("Unikalne wartości w Result po .lower():", df_analysis['Result'].str.lower().unique())
+            df_analysis = df_analysis.dropna(subset=['Result_Binary'])
+            print(f"🧹 Usunięto {null_binary} wierszy z problemami kodowania")
+        else:
+            print(f"Kodw Result_Binary zakończone sukcesem")
+
+        numeric_cols = ['Age', 'Heart rate', 'Systolic blood pressure',
+                        'Diastolic blood pressure', 'Blood sugar', 'CK-MB', 'Troponin']
+
+        for col in numeric_cols:
+            if col in df_analysis.columns:
+                initial_col_size = len(df_analysis)
+
+                df_analysis[col] = df_analysis[col].replace([np.inf, -np.inf], np.nan)
+
+                if df_analysis[col].dtype == 'object':
+                    print(f"⚠️  {col} ma typ object - próba konwersji na numeric")
+                    df_analysis[col] = pd.to_numeric(df_analysis[col], errors='coerce')
+
+                df_analysis = df_analysis.dropna(subset=[col])
+
+                final_col_size = len(df_analysis)
+                if initial_col_size > final_col_size:
+                    print(f"🧹 {col}: usunięto {initial_col_size - final_col_size} wierszy z NaN")
+
+        final_rows = len(df_analysis)
+        print(f"✅ Finalna liczba wierszy: {final_rows}")
+
+        if df_analysis['Result_Binary'].isnull().sum() > 0:
+            raise ValueError("❌ Result_Binary nadal zawiera NaN po czyszczeniu!")
+
+        result_counts = df_analysis['Result_Binary'].value_counts()
+        print(f"📊 Rozkład Result_Binary: {result_counts.to_dict()}")
 
         print("🔧 Przygotowano zmienne do analizy:")
         print("   - Result_Binary: 0=Negative, 1=Positive")
+        print("   - Wszystkie zmienne numeryczne oczyszczone z NaN/inf")
 
         return df_analysis
 
     def _display_basic_info(self):
-        """Wyświetla podstawowe informacje o danych"""
 
         print("\n📋 PODSTAWOWE INFORMACJE O DANYCH:")
         print("-" * 50)
@@ -89,7 +117,6 @@ class DataLoader:
             if col in self.df.columns:
                 print(f"   • {col}: {desc}")
 
-        # Sprawdzenie braków danych
         missing_total = self.df.isnull().sum().sum()
         print(f"\n🔍 Braki danych: {missing_total}")
 
@@ -102,14 +129,24 @@ class DataLoader:
         else:
             print("✅ Dataset kompletny - brak braków danych")
 
-        # Rozkład zmiennej docelowej
         result_counts = self.df['Result'].value_counts()
         print(f"\n🎯 Rozkład zmiennej docelowej (Result):")
-        print(f"   • Positive (zawał): {result_counts.get('Positive', 0)} ({result_counts.get('Positive', 0)/len(self.df)*100:.1f}%)")
-        print(f"   • Negative (brak zawału): {result_counts.get('Negative', 0)} ({result_counts.get('Negative', 0)/len(self.df)*100:.1f}%)")
+
+        positive_count = 0
+        negative_count = 0
+
+        for value, count in result_counts.items():
+            if str(value).lower() == 'positive':
+                positive_count = count
+            elif str(value).lower() == 'negative':
+                negative_count = count
+            print(f"   • {value}: {count} ({count/len(self.df)*100:.1f}%)")
+
+        print(f"\n📊 Podsumowanie (po normalizacji nazw):")
+        print(f"   • Positive (zawał): {positive_count} ({positive_count/len(self.df)*100:.1f}%)")
+        print(f"   • Negative (brak zawału): {negative_count} ({negative_count/len(self.df)*100:.1f}%)")
 
     def _display_hypotheses(self):
-        """Wyświetla sformułowane hipotezy badawcze"""
 
         print("\n🎯 SFORMUŁOWANE HIPOTEZY BADAWCZE:")
         print("-" * 50)
@@ -136,17 +173,15 @@ class DataLoader:
         ]
 
         for hyp in hypotheses:
-            print(f"\n📌 HIPOTEZA {hyp['number']}: {hyp['title']}")
+            print(f"\nHIPOTEZA {hyp['number']}: {hyp['title']}")
             print(f"   • Zmienna zależna: {hyp['dependent']}")
             print(f"   • Zmienne objaśniające: {hyp['independent']}")
 
     def get_variable_info(self):
-        """Zwraca informacje o zmiennych w formacie słownika"""
 
         if self.df_analysis is None:
             raise ValueError("Dane nie zostały jeszcze wczytane")
 
-        # Podział na zmienne ilościowe i jakościowe
         quantitative_vars = ['Age', 'Heart rate', 'Systolic blood pressure',
                              'Diastolic blood pressure', 'Blood sugar', 'CK-MB', 'Troponin']
 
@@ -179,7 +214,6 @@ class DataLoader:
         }
 
     def get_data_summary(self):
-        """Zwraca podsumowanie danych w formacie słownika"""
 
         if self.df_analysis is None:
             raise ValueError("Dane nie zostały jeszcze wczytane")
